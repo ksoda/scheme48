@@ -8,7 +8,7 @@ data LispVal = Atom String
              | DottedList [LispVal] LispVal
              | Number Integer
              | String String
-             | Bool Bool
+             | Bool Bool deriving Show
 
 main :: IO ()
 -- main = do args <- getArgs
@@ -65,8 +65,18 @@ parseAtom = do
     "#f" -> Bool False
     _    -> Atom atom
 
+parseNumber1 :: Parser LispVal
+parseNumber1 =
+  many1 digit >>= return . Number . read
+
 parseNumber :: Parser LispVal
 parseNumber = (Number . read) <$> many1 digit
+
+parseNumber0 :: Parser LispVal
+parseNumber0 = do
+  digitStrs <- many1 digit
+  let number = Number . read $ digitStrs
+  return number
 
 parseExpr :: Parser LispVal
 parseExpr = parseAtom
