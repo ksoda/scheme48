@@ -18,10 +18,24 @@ main = do
   return ()
 
 tests = TestList
-  [ "string" ~: readExpr "\"this is a string\"" ~?= "Found value"
+  [ "atom" ~: readExpr0 "%"                     ~?= "Found value"
+  , "atom" ~: readExpr1 "   %"                  ~?= "Found value"
+  , "no match" ~: take 8 (readExpr1 "%")        ~?= "No match"
+  , "no match" ~: take 8 (readExpr1 "abc")      ~?= "No match"
+  , "string" ~: readExpr "\"this is a string\"" ~?= "Found value"
   , "number" ~: readExpr "25"                   ~?= "Found value"
-  , "no match" ~: take 8 (readExpr "(symbol)")    ~?= "No match"
+  , "no match" ~: take 8 (readExpr "(symbol)")  ~?= "No match"
   ]
+
+readExpr0 :: String -> String
+readExpr0 input = case parse symbol "lisp" input of
+    Left err -> "No match: " ++ show err
+    Right val -> "Found value"
+
+readExpr1 :: String -> String
+readExpr1 input = case parse (spaces >> symbol) "lisp" input of
+    Left err -> "No match: " ++ show err
+    Right val -> "Found value"
 
 readExpr :: String -> String
 readExpr input = case parse parseExpr "lisp" input of
