@@ -1,6 +1,6 @@
 import System.Environment
 import Control.Monad
-import Text.ParserCombinators.Parsec hiding (spaces)
+import Text.ParserCombinators.Parsec
 import Test.HUnit
 
 data LispVal = Atom String
@@ -20,11 +20,15 @@ main = do
 tests = TestList
   [ "atom" ~: readExpr0 "%"                     ~?= "Found value"
   , "atom" ~: readExpr1 "   %"                  ~?= "Found value"
-  , "no match" ~: take 8 (readExpr1 "%")        ~?= "No match"
   , "no match" ~: take 8 (readExpr1 "abc")      ~?= "No match"
   , "string" ~: readExpr "\"this is a string\"" ~?= "Found value"
   , "number" ~: readExpr "25"                   ~?= "Found value"
   , "list" ~: readExpr "(symbol)"               ~?= "Found value"
+  , "list" ~: readExpr "(a test)"               ~?= "Found value"
+  , "list" ~: readExpr "(a (nested) test)"                  ~?= "Found value"
+  , "list" ~: readExpr "(a (dotted . list) test)"           ~?= "Found value"
+  , "list" ~: readExpr "(a '(quoted (dotted . list)) test)" ~?= "Found value"
+  , "list" ~: take 8 (readExpr "(a '(imbalanced parens)")   ~?= "No match"
   ]
 
 readExpr0 :: String -> String
@@ -44,9 +48,6 @@ readExpr input = case parse parseExpr "lisp" input of
 
 symbol :: Parser Char
 symbol = oneOf "!#$%&|*+-/:<=>?@^_~"
-
-spaces :: Parser ()
-spaces = skipMany1 space
 
 parseString :: Parser LispVal
 parseString = do
@@ -79,7 +80,7 @@ parseNumber0 = do
   return number
 
 parseList :: Parser LispVal
-parseList = liftM List $ sepBy parseExpr spaces
+parseList = List <$> sepBy parseExpr spaces
 
 parseDottedList :: Parser LispVal
 parseDottedList = do
