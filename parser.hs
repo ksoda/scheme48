@@ -8,7 +8,7 @@ data LispVal = Atom String
              | DottedList [LispVal] LispVal
              | Number Integer
              | String String
-             | Bool Bool deriving Show
+             | Bool Bool
 
 main :: IO ()
 -- main = do args <- getArgs
@@ -21,30 +21,30 @@ tests = TestList
   [ "atom" ~: readExpr0 "%"                     ~?= "Found value"
   , "atom" ~: readExpr1 "   %"                  ~?= "Found value"
   , "no match" ~: take 8 (readExpr1 "abc")      ~?= "No match"
-  , "string" ~: readExpr "\"this is a string\"" ~?= "Found value"
-  , "number" ~: readExpr "25"                   ~?= "Found value"
-  , "list" ~: readExpr "(symbol)"               ~?= "Found value"
-  , "list" ~: readExpr "(a test)"               ~?= "Found value"
-  , "list" ~: readExpr "(a (nested) test)"                  ~?= "Found value"
-  , "list" ~: readExpr "(a (dotted . list) test)"           ~?= "Found value"
-  , "list" ~: readExpr "(a '(quoted (dotted . list)) test)" ~?= "Found value"
+  , "string" ~: readExpr "\"this is a string\"" ~?= "Found \"this is a string\""
+  , "number" ~: readExpr "25"                   ~?= "Found 25"
+  , "list" ~: readExpr "(symbol)"               ~?= "Found (symbol)"
+  , "list" ~: readExpr "(a test)"               ~?= "Found (a test)"
+  , "list" ~: readExpr "(a (nested) test)"                  ~?= "Found (a (nested) test)"
+  , "list" ~: readExpr "(a (dotted . list) test)"           ~?= "Found (a (dotted . list) test)"
+  , "list" ~: readExpr "(a '(quoted (dotted . list)) test)" ~?= "Found (a (quote (quoted (dotted . list))) test)"
   , "list" ~: take 8 (readExpr "(a '(imbalanced parens)")   ~?= "No match"
   ]
 
+readExpr :: String -> String
+readExpr input = case parse parseExpr "lisp" input of
+  Left err -> "No match: " ++ show err
+  Right val -> "Found " ++ show val
+
 readExpr0 :: String -> String
 readExpr0 input = case parse symbol "lisp" input of
-    Left err -> "No match: " ++ show err
-    Right val -> "Found value"
+  Left err -> "No match: " ++ show err
+  Right val -> "Found value"
 
 readExpr1 :: String -> String
 readExpr1 input = case parse (spaces >> symbol) "lisp" input of
-    Left err -> "No match: " ++ show err
-    Right val -> "Found value"
-
-readExpr :: String -> String
-readExpr input = case parse parseExpr "lisp" input of
-    Left err -> "No match: " ++ show err
-    Right val -> "Found value"
+  Left err -> "No match: " ++ show err
+  Right val -> "Found value"
 
 symbol :: Parser Char
 symbol = oneOf "!#$%&|*+-/:<=>?@^_~"
@@ -106,3 +106,17 @@ parseExpr =
     x <- try parseList <|> parseDottedList
     char ')'
     return x
+
+showVal :: LispVal -> String
+showVal (String contents) = "\"" ++ contents ++ "\""
+showVal (Atom name) = name
+showVal (Number contents) = show contents
+showVal (Bool True) = "#t"
+showVal (Bool False) = "#f"
+showVal (List contents) = "(" ++ unwordsList contents ++ ")"
+showVal (DottedList head tail) = "(" ++ unwordsList head ++ " . " ++ showVal tail ++ ")"
+
+unwordsList :: [LispVal] -> String
+unwordsList = unwords . map showVal
+
+instance Show LispVal where show = showVal
