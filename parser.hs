@@ -11,30 +11,27 @@ data LispVal = Atom String
              | Bool Bool
 
 main :: IO ()
--- main = do args <- getArgs
---           putStrLn . readExpr . head $ args
+-- main = getArgs >>= print . eval . readExpr . head
 main = do
   runTestTT tests
   return ()
 
+readEvalShow = show . eval . readExpr
 tests = TestList
-  [ "atom" ~: readExpr0 "%"                     ~?= "Found value"
-  , "atom" ~: readExpr1 "   %"                  ~?= "Found value"
-  , "no match" ~: take 8 (readExpr1 "abc")      ~?= "No match"
-  , "string" ~: readExpr "\"this is a string\"" ~?= "Found \"this is a string\""
-  , "number" ~: readExpr "25"                   ~?= "Found 25"
-  , "list" ~: readExpr "(symbol)"               ~?= "Found (symbol)"
-  , "list" ~: readExpr "(a test)"               ~?= "Found (a test)"
-  , "list" ~: readExpr "(a (nested) test)"                  ~?= "Found (a (nested) test)"
-  , "list" ~: readExpr "(a (dotted . list) test)"           ~?= "Found (a (dotted . list) test)"
-  , "list" ~: readExpr "(a '(quoted (dotted . list)) test)" ~?= "Found (a (quote (quoted (dotted . list))) test)"
-  , "list" ~: take 8 (readExpr "(a '(imbalanced parens)")   ~?= "No match"
+  [ "string" ~: readEvalShow "\"this is a string\"" ~?= "\"this is a string\""
+  , "number" ~: readEvalShow "25"                   ~?= "25"
+  -- , "list" ~: readEvalShow "(symbol)"               ~?= "(symbol)"
+  -- , "list" ~: readEvalShow "(a test)"               ~?= "(a test)"
+  -- , "list" ~: readEvalShow "(a (nested) test)"                  ~?= "(a (nested) test)"
+  -- , "list" ~: readEvalShow "(a (dotted . list) test)"           ~?= "(a (dotted . list) test)"
+  -- , "list" ~: readEvalShow "(a '(quoted (dotted . list)) test)" ~?= "(a (quote (quoted (dotted . list))) test)"
+  , "list" ~: take 9 (readEvalShow "(a '(imbalanced parens)") ~?= "\"No match"
   ]
 
-readExpr :: String -> String
+readExpr :: String -> LispVal
 readExpr input = case parse parseExpr "lisp" input of
-  Left err -> "No match: " ++ show err
-  Right val -> "Found " ++ show val
+  Left err -> String $ "No match: " ++ show err
+  Right val -> val
 
 readExpr0 :: String -> String
 readExpr0 input = case parse symbol "lisp" input of
@@ -45,6 +42,11 @@ readExpr1 :: String -> String
 readExpr1 input = case parse (spaces >> symbol) "lisp" input of
   Left err -> "No match: " ++ show err
   Right val -> "Found value"
+
+readExpr2 :: String -> String
+readExpr2 input = case parse parseExpr "lisp" input of
+  Left err -> "No match: " ++ show err
+  Right val -> "Found " ++ show val
 
 symbol :: Parser Char
 symbol = oneOf "!#$%&|*+-/:<=>?@^_~"
@@ -120,3 +122,9 @@ unwordsList :: [LispVal] -> String
 unwordsList = unwords . map showVal
 
 instance Show LispVal where show = showVal
+
+eval :: LispVal -> LispVal
+eval val@(String _) = val
+eval val@(Number _) = val
+eval val@(Bool _) = val
+eval (List [Atom "quote", val]) = val
