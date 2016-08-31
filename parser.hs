@@ -20,11 +20,11 @@ readEvalShow = show . eval . readExpr
 tests = TestList
   [ "string" ~: readEvalShow "\"this is a string\"" ~?= "\"this is a string\""
   , "number" ~: readEvalShow "25"                   ~?= "25"
-  -- , "list" ~: readEvalShow "(symbol)"               ~?= "(symbol)"
-  -- , "list" ~: readEvalShow "(a test)"               ~?= "(a test)"
-  -- , "list" ~: readEvalShow "(a (nested) test)"                  ~?= "(a (nested) test)"
-  -- , "list" ~: readEvalShow "(a (dotted . list) test)"           ~?= "(a (dotted . list) test)"
-  -- , "list" ~: readEvalShow "(a '(quoted (dotted . list)) test)" ~?= "(a (quote (quoted (dotted . list))) test)"
+  , "list" ~: readEvalShow "(symbol)"               ~?= "#f"
+  , "list" ~: readEvalShow "(a test)"               ~?= "#f"
+  , "list" ~: readEvalShow "(a (nested) test)"                  ~?= "#f"
+  , "list" ~: readEvalShow "(a (dotted . list) test)"           ~?= "#f"
+  , "list" ~: readEvalShow "(a '(quoted (dotted . list)) test)" ~?= "#f"
   , "list" ~: take 9 (readEvalShow "(a '(imbalanced parens)") ~?= "\"No match"
   ]
 
@@ -69,8 +69,7 @@ parseAtom = do
     _    -> Atom atom
 
 parseNumber1 :: Parser LispVal
-parseNumber1 =
-  many1 digit >>= return . Number . read
+parseNumber1 = many1 digit >>= return . Number . read
 
 parseNumber :: Parser LispVal
 parseNumber = (Number . read) <$> many1 digit
@@ -128,3 +127,29 @@ eval val@(String _) = val
 eval val@(Number _) = val
 eval val@(Bool _) = val
 eval (List [Atom "quote", val]) = val
+eval (List (Atom func : args)) = apply func $ map eval args
+
+apply :: String -> [LispVal] -> LispVal
+apply func args = maybe (Bool False) ($ args) $ lookup func primitives
+
+primitives :: [(String, [LispVal] -> LispVal)]
+primitives = [("+", numericBinop (+)),
+              ("-", numericBinop (-)),
+              ("*", numericBinop (*)),
+              ("/", numericBinop div),
+              ("mod", numericBinop mod),
+              ("quotient", numericBinop quot),
+              ("remainder", numericBinop rem)]
+
+numericBinop :: (Integer -> Integer -> Integer) -> [LispVal] -> LispVal
+numericBinop op params = Number $ foldl1 op $ map unpackNum params
+
+unpackNum :: LispVal -> Integer
+unpackNum (Number n) = n
+unpackNum (String n) =
+  let parsed = reads n in
+    if null parsed
+      then 0
+      else fst . head $ parsed
+unpackNum (List [n]) = unpackNum n
+unpackNum _ = 0
