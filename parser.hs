@@ -26,6 +26,10 @@ tests = TestList
   , "list" ~: readEvalShow "(a (dotted . list) test)"           ~?= "#f"
   , "list" ~: readEvalShow "(a '(quoted (dotted . list)) test)" ~?= "#f"
   , "list" ~: take 9 (readEvalShow "(a '(imbalanced parens)") ~?= "\"No match"
+  , "list" ~: readEvalShow "(+ 2 2)" ~?= "4"
+  , "list" ~: readEvalShow "(+ 2 (-4 1))" ~?= "2"
+  , "list" ~: readEvalShow "(+ 2 (- 4 1))" ~?= "5"
+  , "list" ~: readEvalShow "(- (+ 4 6 3) 3 5 2)" ~?= "3"
   ]
 
 readExpr :: String -> LispVal
