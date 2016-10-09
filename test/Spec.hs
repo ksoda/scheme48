@@ -18,11 +18,11 @@ tests = TestList
   , "read nested list" ~: readShow "(a (nested . dot) '(test))"
     ~?= "Right (a (nested . dot) '(test))"
   , "read string" ~: (isLeft . return . readExpr) "(a '(imbalanced parens)" ~?= True
-  , "list" ~: (show . readEval $ "(+ 2 (+ 1 1 1))") ~?= "Right 5"
-  , "list" ~: (show . readEval $ "(-4 1)")
+  , "eval" ~: (show . readEval $ "(+ 2 (+ 1 1 1))") ~?= "Right 5"
+  , "eval" ~: (show . readEval $ "(-4 1)")
     ~?= "Left Unrecognized primitive function args: \"-4\""
-  , "list" ~: readEvalShow "(+ 1 1)" ~?= "2"
-  , "list" ~: readEvalShow "(+ 1)" ~?= "Expected 2 args; found values 1"
-  , "list" ~: readEvalShow "(+ 2 \"two\")" ~?= "Invalid type: expected number, found \"two\""
-  , "list" ~: readEvalShow "(what? 2)" ~?= "Unrecognized primitive function args: \"what?\""
+  , "show" ~: readEvalShow "(+ 1 1)" ~?= "2"
+  , "show error" ~: readEvalShow "(+ 1)" ~?= "Expected 2 args; found values 1"
+  , "show error" ~: readEvalShow "(+ 2 \"two\")" ~?= "Invalid type: expected number, found \"two\""
+  , "show error" ~: readEvalShow "(what? 2)" ~?= "Unrecognized primitive function args: \"what?\""
   ]
