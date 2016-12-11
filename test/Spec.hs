@@ -1,3 +1,4 @@
+import Control.Monad
 import Test.HUnit
 import Lib
 import Data.Either
