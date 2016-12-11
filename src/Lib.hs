@@ -1,5 +1,6 @@
 module Lib
-  ( readExpr
+  ( LispVal
+  , readExpr
   , eval
   , trapError
   , extractValue
