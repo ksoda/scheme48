@@ -1,4 +1,5 @@
 import Util
+import Util.Internal
 import Test.Hspec
 import Data.Either
 -- import Test.QuickCheck
