@@ -1,22 +1,33 @@
 module Lib
   ( LispVal
+  , LispError
   , readExpr
   , eval
   , trapError
   , extractValue
-) where
+  ) where
 
 import Text.ParserCombinators.Parsec
 -- import Control.Monad.Except
 -- FIXME: deprecated warning
 import Control.Monad.Error
 
-data LispVal = Atom String
-             | List [LispVal]
-             | DottedList [LispVal] LispVal
-             | Number Integer
-             | String String
-             | Bool Bool
+data LispVal
+  = Atom String
+  | List [LispVal]
+  | DottedList [LispVal] LispVal
+  | Number Integer
+  | String String
+  | Bool Bool
+
+data LispError
+  = NumArgs Integer [LispVal]
+  | TypeMismatch String LispVal
+  | Parser ParseError
+  | BadSpecialForm String LispVal
+  | NotFunction String String
+  | UnboundVar String String
+  | Default String
 
 readExpr :: String -> ThrowsError LispVal
 readExpr input = case parse parseExpr "lisp" input of
@@ -131,14 +142,6 @@ unpackNum (String n) = let parsed = reads n in
                             else return . fst . head $ parsed
 unpackNum (List [n]) = unpackNum n
 unpackNum notNum = throwError $ TypeMismatch "number" notNum
-
-data LispError = NumArgs Integer [LispVal]
-               | TypeMismatch String LispVal
-               | Parser ParseError
-               | BadSpecialForm String LispVal
-               | NotFunction String String
-               | UnboundVar String String
-               | Default String
 
 showError :: LispError -> String
 showError (UnboundVar message varname) =

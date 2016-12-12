@@ -1,12 +1,8 @@
 import Util
-import Control.Exception (evaluate)
-import Data.Either
-
 import Test.Hspec
+import Data.Either
 -- import Test.QuickCheck
--- import Lib
--- import Control.Monad
--- import Text.ParserCombinators.Parsec
+-- import Control.Exception (evaluate)
 
 main :: IO ()
 main = hspec spec
@@ -23,30 +19,33 @@ main = hspec spec
 
 spec :: Spec
 spec =
-  describe "readEvalShow" $ do
-    it "reads number" $
-      readEvalShow "42" `shouldBe` "42"
+  describe "Util" $ do
+    describe "readEvalShow" $ do
+      it "reads number" $
+        readEvalShow "42" `shouldBe` "42"
 
-    it "reads string" $
-      readEvalShow "\"this is a string\"" `shouldBe` "\"this is a string\""
+      it "reads string" $
+        readEvalShow "\"this is a string\"" `shouldBe` "\"this is a string\""
 
-    it "reads nested list" $
-      readShow "(a (nested . dot) '(test))" `shouldBe` "Right (a (nested . dot) (quote (test)))"
+      it "adds numbers" $
+        readEvalShow "(+ 2 (+ 1 1 1))" `shouldBe` "5"
 
-    it "adds numbers" $
-      readEvalShow "(+ 2 (+ 1 1 1))" `shouldBe` "5"
+      it "adds numbers" $
+        readEvalShow "(+ 1 1)" `shouldBe` "2"
 
-    it "adds numbers" $
-      readEvalShow "(+ 1 1)" `shouldBe` "2"
+    describe "readEval" $ do
+      it "fails" $
+        isLeft . readEval $ "(a '(imbalanced parens)"
 
-    it "fails" $
-      isLeft . readEval $ "(a '(imbalanced parens)"
+      it "fails with unrecognized primitive function " $
+        all (isLeft . readEval) ["(-4 1)", "(what? 2)"]
 
-    it "fails with unrecognized primitive function " $
-      all (isLeft . readEval) ["(-4 1)", "(what? 2)"]
+      it "fails with 1 arg" $
+        isLeft $ readEval "(+ 1)"
 
-    it "fails with 1 arg" $
-      isLeft $ readEval "(+ 1)"
+      it "fails with invalid type" $
+        isLeft $ readEval "(+ 2 \"two\")"
 
-    it "fails with invalid type" $
-      isLeft $ readEval "(+ 2 \"two\")"
+    describe "readExpr" $ do
+      it "reads nested list" $
+        readShow "(a (nested . dot) '(test))" `shouldBe` "Right (a (nested . dot) (quote (test)))"
